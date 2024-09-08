@@ -1,0 +1,11 @@
+:root {
+  --primary: #FCF6F3;
+  --secondary: #D4B499;
+  --background: hsl(229, 26%, 16%);
+}
+
+:root.light {
+  --primary: #3F5569;
+  --secondary: #889EAF;
+  --background: #FCF6F3;
+}

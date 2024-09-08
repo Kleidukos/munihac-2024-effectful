@@ -1,0 +1,330 @@
+:root {
+  font-family: Inter, sans-serif;
+  font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+}
+@supports (font-variation-settings: normal) {
+  :root { font-family: InterVariable, sans-serif; }
+}
+html, .view body {
+  background-color: black;
+}
+body, .view section { background-color: white; }
+
+.view section .incremental {
+  visibility: visible;
+  opacity: 1;
+}
+section { left: -150%; }
+section[aria-selected] { left: 0; }
+section[aria-selected] ~ section { left: +150% }
+
+/* Incremental elements */
+/* By default, visible */
+.incremental > * { opacity: 1; }
+/* The current item */
+.incremental > *[aria-selected] { opacity: 1; }
+/* The items to-be-selected */
+.incremental > *[aria-selected] ~ * { opacity: 0; }
+
+.loading {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: red;
+}
+
+body.loaded .loading {
+  display: none;
+}
+
+.slide {
+  /*
+  color: #432c7a;
+  background-color: #fce2db;
+  color: #B73E3E;
+  background-color: #EDDBC0;
+  color: #E14D2A;
+  background-color: #FFF8EA;
+  color: #FFF8EA;
+  background-color: #820000;
+
+  color: #F3D5C0;
+  background-color: #506D84;
+  #D4B499
+  #889EAF
+  color: #FCF6F3;
+  background-color: #3F5569;
+  color: #3F5569;
+  background-color: #FCF6F3;
+  */
+  color: var(--primary);
+  background-color: var(--background);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Display the first slide element on top */
+.slide>*:first-child {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Center an element if it's alone in the slide */
+.slide>*:first-child:last-child,
+/* Center elements coming after the first one */
+/* .slide>*:nth-child(n+2), */
+/* Center elements when explicitly asked for */
+.slide>.centered {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+.slide>*:first-child:has(+ [role=note]) {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.slide>*.top{
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.slide:has(.make-alternate) {
+  color: var(--primary);
+  background-color: var(--secondary);
+}
+
+/* `:has()` is not supported by firefox yet */
+.slide.alternate {
+  color: var(--primary);
+  background-color: var(--secondary);
+}
+
+h1 {
+  font-size: 3rem;
+  text-align: center;
+}
+
+ul {
+  text-align: left;
+  margin-left: 2rem;
+  margin-right: auto;
+  list-style-type: disc;
+}
+
+.nobullet {
+  list-style-type: none;
+}
+
+.nobullet li::before {
+  content: "\200B";
+}
+
+
+ol {
+  text-align: left;
+  padding-right: 1rem;
+  margin-left: 2rem;
+  margin-right: auto;
+}
+
+.unmarked {
+  text-align: right;
+  list-style-type: none;
+}
+
+
+li {
+  padding-right: 1rem;
+  font-size: 1.5rem;
+  min-width: 200px;
+}
+
+a {
+  color: var(--primary);
+}
+
+a:hover, a:active, a:focus {
+  color: var(--secondary);
+}
+
+.sourceCode {
+  font-size: 14px;
+}
+
+.jumbogroup {
+  text-align: center;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.jumbo {
+  text-transform: uppercase;
+  display: inline-block;
+  transform-origin: 50% 0;
+  transform: translate3d(0, 0, 0);
+}
+
+.bigimage img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.prose {
+  margin-top: 5rem;
+}
+
+img.center {
+  left: 50%;
+  margin-bottom: 3px;
+  margin-right: -50%;
+  margin-top: 25%;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 300px;
+}
+
+img.right {
+  right: 50%;
+  margin-bottom: 3px;
+  margin-right: -50%;
+  margin-top: 5%;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.spaced > * {
+  margin-bottom: 2rem;
+}
+
+/*
+.sourceCode span.fu, .sourceCode span.kw, .sourceCode span.dv {
+    color: var(--primary);
+}
+.sourceCode span.dt, .sourceCode span.st, .sourceCode span.ch {
+    color: var(--primary);
+}
+.sourceCode span.ot, .sourceCode span.co, .sourceCode span.op {
+    color: var(--primary);
+}
+*/
+
+.author {
+  margin-bottom: 2rem;
+}
+
+.logos {
+  margin-top: 3.2rem;
+}
+
+.unmarked-list {
+  list-style-type: none;
+}
+
+.title-slide h1 {
+  font-size: 4rem;
+}
+
+.title-slide .authors {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+}
+
+.author-slide h1 {
+  text-align: left;
+  font-size: 3rem;
+}
+
+h2 {
+  text-align: left;
+  font-size: 2rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+h3 {
+  text-align: left;
+  font-size: 1.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.author {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.author-desc {
+  margin-top: 0.7rem;
+}
+
+.presentation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.solid-left-side {
+  border-left: 4px solid var(--primary);
+}
+
+.solid-left-side .text {
+  margin-left: 1rem;
+}
+
+pre {
+  padding: 1rem;
+}
+
+.overlay {
+  font-family: "Noto Sans", "sans-serif";
+  color: var(--primary);
+  z-index: 10000;
+  position: absolute;
+  bottom: 0.5rem;
+  right: 1rem;
+}
+
+.slide[aria-selected=true]~.overlay {
+  display: none;
+}
+
+.big-1 {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.big-2 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.smaller-picture p img {
+  height: 300px;
+  width: 600px;
+}
+
+dd {
+  margin-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+dd.explicit-list {
+  list-style: disc;
+}
+
+blockquote p {
+  font-size: 1.5rem;
+  font-style: italic;
+}
+
+
+.horizontally-centered {
+  margin-left: auto;
+  margin-right: auto;
+}
