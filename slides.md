@@ -2,7 +2,7 @@
 css:
   - ./assets/css/variables.css
   - ./assets/css/styles.css
-title: Effect Systems in Practice – MuniHac 2024 
+title: Effect Systems in Practice – MuniHac 2024
 subtitle:
 introductory_notes: |
   Hello everyone,
@@ -35,12 +35,12 @@ author:
 * What semantic effect tracking means
 * The Effectful library
 
---- 
+---
 
 # What this talk is not about
 
 * This is not a deep dive into the theoretical implications of algebraic effects
-* ➡️ Check out the talks of Alexis King and Ningning Xie 
+* ➡️ Check out the talks of Alexis King and Ningning Xie
 
 :::notes
 If I think you'll receive a better answer from one of them, I will redirect you to their work
@@ -65,7 +65,7 @@ If I think you'll receive a better answer from one of them, I will redirect you 
 * > Determinism: The output of an expression stays the same if the input is the same
 * > Referential transparency: You can replace a call to a function with its result in a safe and predictible manner
 
-:::notes 
+:::notes
 Interactions with the outside world in non-reproducible ways
 :::
 
@@ -94,7 +94,7 @@ Meanwhile in an Eternal War alternate reality based on launching missiles: we do
 ## Side effects are arbitrary
 
 > A function without any effect is called total and corresponds to mathematically total functions – a good place to be.
-> Then we have effects for partial functions that can raise exceptions (exn), and potentially non-terminating functions as div (divergent). 
+> Then we have effects for partial functions that can raise exceptions (exn), and potentially non-terminating functions as div (divergent).
 > **The combination of exn and div is called pure as that corresponds to Haskell's notion of purity.**
 
 – "The Koka Programming Language"
@@ -129,6 +129,48 @@ However you can't do much when it comes to interacting with the outside world, a
 
 ---
 
+# Interlude: Anatomy of a type signature
+
+```haskell
+fun :: a
+```
+
+```haskell
+       ❗
+      ┌──┐
+fun :: IO a
+```
+
+``` haskell
+            ❗
+      ┌──────────────┐
+fun :: (Constraint a) => IO a
+```
+
+::: notes
+The signification of `IO` is, fundamentally: I give up. We saw earlier that Haskell admits runtime exceptions as part of its model for purity (think about `undefined` or `error`).
+:::
+
+---
+
+# The need for side-effect tracking
+
+## These functions could be doing anything
+
+```haskell
+trace :: Text -> IO a -> IO a
+
+fetchFromCache :: Int -> IO (Maybe Result)
+
+log :: Text -> IO ()
+
+fetchFromDB :: Int -> IO (Maybe Result)
+
+throwError :: ServerError -> IO ()
+```
+
+---
+
 # Semantic side-effect tracking
 
 <div class="big-2 horizontally-centered">
@@ -156,15 +198,15 @@ myComputation number = trace "myComputation" $ do
 ```
 
 ::: notes
-Putting every type of outside interaction leads to semantic opacity: 
-This leads us into a mental framework of pure versus impure, good versus evil, safe versus unsafe, 
-which is not only wrong but also steers us in the wrong direction.
+Putting every type of outside interaction into the 'IO' box is Semantic Opacity:
+This leads us into a mental framework of pure versus impure, good versus evil, safe versus unsafe,
+which is not only wrong but also steers us in the wrong direction for thinking about systems.
 
 From an architectural point of view we need to be able to know what are the interactions
 of our systems.
 :::
 
---- 
+---
 
 # Semantic side-effect tracking
 
@@ -195,7 +237,9 @@ myComputation :: Int -> Eff [Trace, Log, Cache, DB, Error ServerError] Result
 
 ::: notes
 We were blindly using IO to say "all bets are off", and now we are listing,
-with precision, a list of well-understood effects that denote interactions with various systems.
+with precision, well-understood effects that denote interactions with various outside systems.
+
+Lo and behold: suddenly `myComputation` makes a lot more sense!
 
 Notice that we are using the syntax for constraints here. With the help of the compiler,
 redundant constraints are signalled, and can tell you if you have mistakenly removed an
@@ -229,13 +273,13 @@ interaction with an outside system, because this interaction is labeled at the t
   * Strict `IORef`
 
 :::notes
-Effectful stems from the double need of replacing stacks of a dozen transformers in industrial 
-code bases. For this, it needs very good integration with libraries like `unliftio`, `exceptions`, `resourcet`, because it is made to be dropped into in an ecosystem of libraries. 
+Effectful stems from the double need of replacing stacks of a dozen transformers in industrial
+code bases. For this, it needs very good integration with libraries like `unliftio`, `exceptions`, `resourcet`, because it is made to be dropped into in an ecosystem of libraries.
 
-However, it does not inherit types from the `transformers` library. 
+However, it does not inherit types from the `transformers` library.
 For the sake of correctness, Effectful re-implemented the State, Writer, and Except transformers. While ReaderT does not have any surprising behaviour,
-the ways StateT and ExceptT interact together can be pretty counter-intuitive! Especially, dropping state updates is not cool, and the fact that 
-ExceptT does not raise a runtime exception means that resources are not freed. It's very easy to inadvertently trigger a space leak. 
+the ways StateT and ExceptT interact together can be pretty counter-intuitive! Especially, dropping state updates is not cool, and the fact that
+ExceptT does not raise a runtime exception means that resources are not freed. It's very easy to inadvertently trigger a space leak.
 
 As such, the performance need not to be just decent but very good. It makes use of IORefs, and low-level Haskell constructs like mutable arrays.
 :::
@@ -262,7 +306,7 @@ to
 ```haskell
 webHandler
   :: ( FileStorage :> es
-     , RNG :> es 
+     , RNG :> es
      , Log :> es
      , Time :> es
      , Trace :> es
@@ -270,7 +314,7 @@ webHandler
 ```
 
 ::: notes
-Offering good ergonomics to replace your bare ReaderT or your MTL constraints 
+Offering good ergonomics to replace your bare ReaderT or your MTL constraints
 :::
 
 ---
