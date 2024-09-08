@@ -48,6 +48,16 @@ If I think you'll receive a better answer from one of them, I will redirect you 
 
 ---
 
+# 🤡
+
+:::jumbogroup
+<img src="./assets/img/URL-equal-method.png" height=400>
+:::
+
+> Java™ Platform Standard Ed. 8, docs.oracle.com
+
+---
+
 # The need for side-effect tracking
 
 ## Determinism, Referential transparency
