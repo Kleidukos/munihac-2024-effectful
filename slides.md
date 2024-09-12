@@ -292,13 +292,16 @@ From:
 
 ```haskell
 webHandler
-  :: ( MonadFileStorage m
-     , MonadRandom m
+  :: ( MonadBaseControl IO m
+     , MonadCatch
+     , MonadDB m
+     , MonadFileStorage m
      , MonadLog m
+     , MonadMask m
+     , MonadRandom m
+     , MonadThrow
      , MonadTime m
-     , MonadBaseControl IO m
-     , MonadTrace m
-     , MonadDB m)
+     , MonadTrace m)
 ```
 
 to
@@ -314,7 +317,9 @@ webHandler
 ```
 
 ::: notes
-Offering good ergonomics to replace your bare ReaderT or your MTL constraints
+Offering good ergonomics to replace your bare ReaderT or your MTL constraints.
+
+The Eff monad has instances for MonadThrow, MonadCatch, MonadMask, and `MonadBaseControl IO`, so you don't have to specify them manually.
 :::
 
 ---
