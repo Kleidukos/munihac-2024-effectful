@@ -2,7 +2,7 @@
 css:
   - ./assets/css/variables.css
   - ./assets/css/styles.css
-title: Effect Systems in Practice – MuniHac 2024
+title: Effect Systems in Practice
 subtitle:
 introductory_notes: |
   Hello everyone,
@@ -30,17 +30,19 @@ author:
 # Structure of this talk
 
 * What this talk is not about
-
-* The need for side-effect tracking
-* What semantic effect tracking means
-* The Effectful library
+* The need for side-effect tracking: IO
+* Semantic Effect Tracking
+* Effect Systems, their implementation, their tragedies
 
 ---
 
 # What this talk is not about
 
-* This is not a deep dive into the theoretical implications of algebraic effects
-* ➡️ Check out the talks of Alexis King and Ningning Xie
+<div class="big-1">
+This is not a deep dive into the theoretical implications of algebraic effects
+
+➡️ Check out the talks of Alexis King and Ningning Xie
+</div>
 
 :::notes
 If I think you'll receive a better answer from one of them, I will redirect you to their work
@@ -66,7 +68,8 @@ If I think you'll receive a better answer from one of them, I will redirect you 
 * > Referential transparency: You can replace a call to a function with its result in a safe and predictible manner
 
 :::notes
-Interactions with the outside world in non-reproducible ways
+Interactions with the outside world in non-reproducible ways is the burden of many programmers.
+I want to clarify some notions here that make life much, much easier.
 :::
 
 ---
@@ -79,13 +82,9 @@ Interactions with the outside world in non-reproducible ways
   * Missile strike? No!
   * Register alloation? Fairly essential.
 
----
-
-# The need for side-effect tracking
-
-## Side effects are arbitrary
-
+::: notes
 Meanwhile in an Eternal War alternate reality based on launching missiles: we do not allocate registers willy-nilly!
+:::
 
 ---
 
@@ -112,7 +111,8 @@ Now, does that mean that IO is complete bullshit? No! We needed an analytical fr
 ### When you're a pure lambda calculus girl living in a pure lambda calculus world, life in plastic _is_ indeed fantastic!
 
 :::notes
-You can do a lot with the generated code, like re-organise it, inline it, anticipate what it will do and replace function calls
+You can do a lot with the generated code, like re-organise it, inline it, anticipate what it will do and replace function calls.
+Inlining becomes easier as well, when you know for a fact that.
 :::
 
 ---
@@ -124,7 +124,7 @@ You can do a lot with the generated code, like re-organise it, inline it, antici
 ### But how about computations that depend on each-other?
 
 ::: notes
-However you can't do much when it comes to interacting with the outside world, and at the level of code generation, there are things that are absolutely forbidden, like re-organising the order of effectful computations that depend on each-other
+However you can't do much when it comes to interacting with the outside world, and at the level of code generation, there are things that are absolutely forbidden, like re-organising the order of computations that depend on each-other and that produce side-effects.
 :::
 
 ---
@@ -147,13 +147,9 @@ fun :: IO a
 fun :: (Constraint a) => IO a
 ```
 
-::: notes
-The signification of `IO` is, fundamentally: I give up. We saw earlier that Haskell admits runtime exceptions as part of its model for purity (think about `undefined` or `error`).
-:::
-
 ---
 
-# The need for side-effect tracking
+# Semantic side-effect tracking
 
 ## These functions could be doing anything
 
@@ -169,11 +165,16 @@ fetchFromDB :: Int -> IO (Maybe Result)
 throwError :: ServerError -> IO ()
 ```
 
+::: notes
+The signification of `IO` is, fundamentally: I give up.
+We saw earlier that Haskell admits runtime exceptions as part of its model for purity (think about `undefined` or `error`).
+:::
+
 ---
 
 # Semantic side-effect tracking
 
-<div class="big-2 horizontally-centered">
+<div class="big-3 horizontally-centered">
 Semantic Opacity
 </div>
 
@@ -210,7 +211,7 @@ of our systems.
 
 # Semantic side-effect tracking
 
-<div class="big-2 horizontally-centered">
+<div class="big-3 horizontally-centered">
 Semantic clarity
 </div>
 
@@ -231,7 +232,7 @@ throwError :: (Error ServerError :> es) -> ServerError -> Eff es ()
 myComputation :: Int -> Eff [Trace, Log, Cache, DB, Error ServerError] Result
 ```
 
-<div class="horizontally-centered big-2">
+<div class="horizontally-centered big-3">
  🎉 🎉 🎉
 </div>
 
@@ -245,6 +246,70 @@ Notice that we are using the syntax for constraints here. With the help of the c
 redundant constraints are signalled, and can tell you if you have mistakenly removed an
 interaction with an outside system, because this interaction is labeled at the types level.
 :::
+
+---
+
+# Effect Systems 
+
+<div class="horizontally-centered big-3">
+Their implementation 
+</div>
+
+<div class="horizontally-centered big-1">
+Their tragedies
+</div>
+
+---
+
+# Effect Systems
+
+## Historically: Monad Transformers
+
+* Newtypes around values with a custom `Monad` instance for sequentiality
+* Instance of `MonadTrans` to use its `lift` method
+
+---
+
+### Monad Transformers Stacks
+
+```haskell
+ExceptT e m a
+```
+
+* `e`: The error type
+* `m`: The monad on which the transformer is stacked
+* `a`: The return value of the computation
+
+### Stack 'Em Up!
+
+```haskell
+ReaderT AuthEnv (
+  RedisReaderT Persistent (
+    CryptoRNGT (
+      DBT (
+        LogT (
+          TraceT Handler)))))
+```
+
+---
+
+### Monad transformer constraints
+
+```haskell
+( Reader AuthEnv m
+, RedisReader PersisTent m
+, CryptoRNG m
+, DB m
+, Log m
+, Trace m
+) => m Handler
+```
+
+---
+
+## Free Monads
+
+
 
 ---
 
@@ -321,6 +386,15 @@ Offering good ergonomics to replace your bare ReaderT or your MTL constraints.
 
 The Eff monad has instances for MonadThrow, MonadCatch, MonadMask, and `MonadBaseControl IO`, so you don't have to specify them manually.
 :::
+
+---
+
+# My thanks go to
+
+* Alexis King
+* Andrzej Rybczak
+* Ningning Xie
+* Xiaoyan Ren
 
 ---
 
