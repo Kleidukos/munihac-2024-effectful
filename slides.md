@@ -580,6 +580,21 @@ ExceptT does not raise a runtime exception means that resources are not freed. I
 As such, the performance need not to be just decent but very good. It makes use of IORefs, and low-level Haskell constructs like mutable arrays.
 :::
 
+---
+
+# Now Introducing: Effectful
+
+* Like `transformers`: Concrete monad: `Eff`
+  * No need for aggressive specialisation
+* Like `mtl`: Effects can be Constraints:
+  * `(MyEffect :> es) => Eff es`
+* Unlike Free Monads, handlers are called in-place, thanks to _evidence-passing_.
+  * No "program tree" is built at run-time
+* Restrictions on non-determinism
+  * The need for `MonadUnliftIO` (`fork`, `bracket`) outweighs the benefits of delimited continuations
+
+---
+
 # Now Introducing: Effectful
 
 ## Ergonomics
@@ -588,16 +603,9 @@ From:
 
 ```haskell
 webHandler
-  :: ( MonadBaseControl IO m
-     , MonadCatch
-     , MonadDB m
-     , MonadFileStorage m
-     , MonadLog m
-     , MonadMask m
-     , MonadRandom m
-     , MonadThrow
-     , MonadTime m
-     , MonadTrace m)
+  :: ( MonadBaseControl IO m , MonadCatch , MonadDB m , MonadFileStorage m
+     , MonadLog m , MonadMask m , MonadRandom m , MonadThrow
+     , MonadTime m , MonadTrace m)
 ```
 
 to
@@ -616,6 +624,53 @@ webHandler
 Offering good ergonomics to replace your bare ReaderT or your MTL constraints.
 
 The Eff monad has instances for MonadThrow, MonadCatch, MonadMask, and `MonadBaseControl IO`, so you don't have to specify them manually.
+:::
+
+---
+
+## Errors that do not punish the user
+
+The library understand how it is being mis-used
+
+### Transformers
+
+```haskell
+Main.hs:34:12: error:
+    • Couldn't match type: StateT Env (WriterT [Int] IO)
+                     with: WriterT a0 IO
+      Expected: ReaderT Int (StateT Env (WriterT [Int] IO)) String
+                -> Int -> WriterT a0 IO String
+        Actual: ReaderT Int (StateT Env (WriterT [Int] IO)) String
+                -> Int -> StateT Env (WriterT [Int] IO) String
+```
+
+### Effectful
+
+```haskell
+Main.hs:14:13: error:
+    • There is no handler for 'State Int' in the context
+```
+
+---
+
+## Errors that do not punish the user
+
+you get actionable advice
+
+```haskell
+If you want to use the unlifting function to run Eff computations in multiple threads,
+  have a look at UnliftStrategy (ConcUnlift).
+CallStack (from HasCallStack):
+  error, called at src/Effectful/Internal/Unlift.hs:105:12
+  seqUnlift, called at src/Effectful/Internal/Monad.hs:230:20
+  seqUnliftIO, called at src/Effectful/Internal/Monad.hs:204:40
+  withEffToIO, called at src/Effectful/Internal/Monad.hs:373:40
+Test suite: FAIL
+```
+
+::: notes
+It happens that I use the `unlift` function to implement a JSON file backend for the logging library I use,
+and so I am directed to entities that I can look up on Hoogle!
 :::
 
 ---
