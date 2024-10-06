@@ -39,30 +39,12 @@ body.loaded .loading {
 }
 
 .slide {
-  /*
-  color: #432c7a;
-  background-color: #fce2db;
-  color: #B73E3E;
-  background-color: #EDDBC0;
-  color: #E14D2A;
-  background-color: #FFF8EA;
-  color: #FFF8EA;
-  background-color: #820000;
-
-  color: #F3D5C0;
-  background-color: #506D84;
-  #D4B499
-  #889EAF
-  color: #FCF6F3;
-  background-color: #3F5569;
-  color: #3F5569;
-  background-color: #FCF6F3;
-  */
   color: var(--primary);
   background-color: var(--background);
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  font-size: 1.5rem;
 }
 
 /* Display the first slide element on top */
@@ -101,11 +83,6 @@ body.loaded .loading {
   background-color: var(--secondary);
 }
 
-h1 {
-  font-size: 3rem;
-  text-align: center;
-}
-
 ul {
   text-align: left;
   margin-left: 2rem;
@@ -137,7 +114,6 @@ ol {
 
 li {
   padding-right: 1rem;
-  font-size: 1.5rem;
   min-width: 200px;
 }
 
@@ -241,6 +217,11 @@ img.right {
   font-size: 3rem;
 }
 
+h1 {
+  font-size: 3rem;
+  text-align: center;
+}
+
 h2 {
   text-align: left;
   font-size: 2rem;
@@ -251,6 +232,13 @@ h2 {
 h3 {
   text-align: left;
   font-size: 1.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+h4 {
+  text-align: left;
+  font-size: 1.4rem;
   margin-top: 1rem;
   margin-bottom: 1rem;
 }
@@ -295,17 +283,17 @@ pre {
 }
 
 .big-1 {
-  font-size: 1.3rem;
+  font-size: 1.7rem;
   font-weight: 500;
 }
 
 .big-2 {
-  font-size: 1.5rem;
+  font-size: 2.0rem;
   font-weight: 500;
 }
 
 .big-3 {
-  font-size: 2rem;
+  font-size: 2.3rem;
   font-weight: 600;
 }
 

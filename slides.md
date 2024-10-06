@@ -38,11 +38,11 @@ author:
 
 # What this talk is not about
 
-<div class="big-1">
 This is not a deep dive into the theoretical implications of algebraic effects
 
-➡️ Check out the talks of Alexis King and Ningning Xie
-</div>
+- *Delimited continuations*?
+
+- ➡️ Check out the talks of Alexis King and Ningning Xie
 
 :::notes
 If I think you'll receive a better answer from one of them, I will redirect you to their work
@@ -221,11 +221,11 @@ trace :: (Trace :> es) => Text -> Eff es a -> Eff es a
 
 fetchFromCache :: (Cache :> es) => Int -> Eff es (Maybe Result)
 
-log :: (Log :> es) -> Text -> Eff es ()
+log :: (Log :> es) => Text -> Eff es ()
 
-fetchFromDB :: (DB :> es) -> Int -> Eff es (Maybe Result)
+fetchFromDB :: (DB :> es) => Int -> Eff es (Maybe Result)
 
-throwError :: (Error ServerError :> es) -> ServerError -> Eff es ()
+throwError :: (Error ServerError :> es) => ServerError -> Eff es ()
 ```
 
 ```haskell
@@ -265,22 +265,101 @@ Their tragedies
 
 ## Historically: Monad Transformers
 
-* Newtypes around values with a custom `Monad` instance for sequentiality
-* Instance of `MonadTrans` to use its `lift` method
+* Newtypes around values with a custom `Monad` instance
 
 ---
 
 ### Monad Transformers Stacks
 
 ```haskell
-ExceptT e m a
+newtype ReaderT r m a
+ask :: Monad m => ReaderT r m r
 ```
 
-* `e`: The error type
+* `r`: The static environment that we pass along
 * `m`: The monad on which the transformer is stacked
 * `a`: The return value of the computation
 
-### Stack 'Em Up!
+#### Stack 'Em Up! 😎
+
+
+```haskell
+ReaderT Int IO String
+```
+
+* Top monad: `Reader`
+  * Its environment: `Int`
+* Base monad:  `IO`
+* Return value: `String`
+
+---
+
+### Monad Transformer Stacks
+
+::: big-2
+Want to access an underlying monad? 
+:::
+
+---
+
+### Monad Transformer Stacks
+
+::: big-2
+Want to access an underlying monad? 
+:::
+
+
+<img src="./assets/img/lift.jpg" height=100% width=100%>
+
+---
+
+### Monad Transformer Stacks
+
+::: big-2
+Want to access an underlying monad? Lift! 🛗
+:::
+
+```haskell
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Class
+
+action :: ReaderT Int IO String
+action = do
+  lift $ putStrLn "I access IO!" 
+  number <- ask
+  pure $ show number
+```
+
+---
+
+### Monad Transformer Babel Towers
+
+What the hell am I supposed to do with this…
+
+```haskell
+action2 :: ReaderT Int (StateT Env (WriterT [Int] IO)) String
+action2 = do
+  liftIO $ putStrLn "I have to use a shortcut for IO"
+  lift $ lift $ tell [42] -- 🪖⛏🪨
+  pure $ "… and all I got was this lousy t-shirt."
+```
+
+---
+
+### Monad Transformer Babel Towers
+
+What the hell am I supposed to do with this…
+
+```haskell
+action2 :: ReaderT Int (StateT Env (WriterT [Int] IO)) String
+action2 = do
+  liftIO $ putStrLn "I have to use a shortcut for IO"
+  lift $ lift $ tell [42] -- 🪖⛏🪨
+  pure $ "… and all I got was this lousy t-shirt."
+```
+
+#### This is something I found at work
+(_Names have been changed to protect the innocent_)
 
 ```haskell
 ReaderT AuthEnv (
@@ -288,12 +367,41 @@ ReaderT AuthEnv (
     CryptoRNGT (
       DBT (
         LogT (
-          TraceT Handler)))))
+          TraceT IO)))))
 ```
+---
+
+### In Conclusion
+
+* Historical solution for making type signatures more declarative
+* Fixed order of effects
+* The same effects are always available all the time
 
 ---
 
-### Monad transformer constraints
+### Monad Transformer Library (`mtl`)
+
+```haskell
+class Monad m => MonadReader r m | m -> r where
+  ask :: m r
+```
+
+* `r`: The static environment that we pass along
+* `m`: The monad that we specify to have `Reader` capabilities
+* No `a` mentioned, it's the one from your type signature
+
+#### Effects live as Constraints.
+As a consequence:
+
+ * No rigid order of effects **all the time**
+ * Omission of unneeded effects
+ * GHC tells us about unused effects
+
+---
+
+### Monad Transformer Library (`mtl`)
+
+#### Constraints in Action
 
 ```haskell
 ( Reader AuthEnv m
@@ -305,11 +413,134 @@ ReaderT AuthEnv (
 ) => m Handler
 ```
 
+Six constraints could mean six appearances of `(>>=)` between each monadic action.
+
+Specialisation is thus mandatory for GHC to produce decent code!
+
+---
+
+### Liftin'? I barely know 'im!
+
+No need for lifting in the user code.
+
+```Haskell
+instance MonadReader r m => MonadReader r (StateT s m) where
+  ask = lift ask
+```
+
+---
+
+### Liftin'? I barely know 'im!
+
+However it has to happen somewhere.
+
+```haskell
+instance MonadReader r m => MonadReader r (ExceptT e m)
+  ask = lift ask
+
+instance MonadReader r m => MonadReader r (IdentityT m)
+  ask = lift ask
+
+instance MonadReader r m => MonadReader r (MaybeT m)
+  ask = lift ask
+
+instance MonadReader r m => MonadReader r (Lazy.StateT s m)
+  ask = lift ask
+
+instance MonadReader r m => MonadReader r (Strict.StateT s m)
+  ask = lift ask
+
+instance (Monoid w, MonadReader r m) => MonadReader r (CPS.WriterT w m)
+  ask = lift ask
+
+instance (Monoid w, MonadReader r m) => MonadReader r (Lazy.WriterT w m)
+  ask = lift ask
+
+instance (Monoid w, MonadReader r m) => MonadReader r (Strict.WriterT w m)
+  ask = lift ask
+```
+
+---
+
+### In Conclusion
+
+* Based on `transformers`
+* Usage of constraints give more flexibility
+* Boilerplate has to be managed with compiler extensions
+
 ---
 
 ## Free Monads
 
+Free Monads give any Functor a monadic structure, much like `Semigroup` gives any `Type` a concatenable structure
 
+```haskell
+data Free f a
+  = Pure a
+  | Free (f (Free f a))
+```
+
+The main appeal of Free monads is that since you reify your computation **as** a data structure, you can inspect it.
+
+---
+
+## Free Monads
+
+### Time to pay up
+
+#### Inspection is **not** Static Analysis
+
+* Monadic actions mean that computations depend on each-other
+* You have to generate values for each action because the next one depends on it
+
+#### Performance trade-offs
+
+Two kinds of Free Monads
+
+* The naïve ones that run in quadratic time, and have linear inspection
+* The co-density ones that run in linear time, but have quadratic inspection
+
+---
+
+## Free Monads
+
+### Upsold on freedom
+
+Free**er** Monads are supposed to solve problems of Free Monads, but remain exotic.
+
+---
+
+## Free Monads
+
+### Upsold on freedom
+
+Free**er** Monads are supposed to solve problems of Free Monads, but remain exotic.
+
+### You actually run two programs
+
+Free Monads build a program on top of your program, to generate the code that will be executed.
+
+---
+
+## Free Monads
+
+Main libraries:
+
+* `freer-simple`
+  * Does not allow higher-order effects
+* `polysemy`
+  * Need a GHC plugin to attain reasonable performance
+
+### In Conclusion
+
+* Two operations: "run" and "inspect", and you need to tailor your implementation for one of these
+* Program is slow to run in any case
+
+---
+
+### In Conclusion
+
+<img src="./assets/img/engineering-dead-end.png" height=auto>
 
 ---
 
@@ -389,7 +620,7 @@ The Eff monad has instances for MonadThrow, MonadCatch, MonadMask, and `MonadBas
 
 ---
 
-# My thanks go to
+# My thanks to
 
 * Alexis King
 * Andrzej Rybczak
@@ -401,3 +632,6 @@ The Eff monad has instances for MonadThrow, MonadCatch, MonadMask, and `MonadBas
 # Sources
 
 * _"The Koka Programming Language", §2.2 "Effect Typing"_, <https://koka-lang.github.io/koka/doc/book.html#why-effects>
+* _"Lifts for free: making mtl typeclasses derivable"_, 2017, <https://lexi-lambda.github.io/blog/2017/04/28/lifts-for-free-making-mtl-typeclasses-derivable>
+* _"Free monads considered harmful"_, 2017, <https://markkarpov.com/post/free-monad-considered-harmful.html>
+* _"Free Monads for Less (Part 1 of 3): Codensity"_, 2011, <https://ekmett.github.io/reader/2011/free-monads-for-less/index.html>
