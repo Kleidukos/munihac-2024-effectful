@@ -33,16 +33,15 @@ author:
 * The need for side-effect tracking: IO
 * Semantic Effect Tracking
 * Effect Systems, their implementation, their tragedies
+* Now Introducing: Effectful
 
 ---
 
 # What this talk is not about
 
-This is not a deep dive into the theoretical implications of algebraic effects
+This is not a deep dive into the theoretical implications of algebraic effects, or deep implementation techniques
 
-- *Delimited continuations*?
-
-- ➡️ Check out the talks of Alexis King and Ningning Xie
+- ➡️ Check out the work of Alexis King and Ningning Xie
 
 :::notes
 If I think you'll receive a better answer from one of them, I will redirect you to their work
@@ -80,7 +79,7 @@ I want to clarify some notions here that make life much, much easier.
 
 * No alteration of the outside world in ways that matter to us
   * Missile strike? No!
-  * Register alloation? Fairly essential.
+  * Register allocation? Fairly essential.
 
 ::: notes
 Meanwhile in an Eternal War alternate reality based on launching missiles: we do not allocate registers willy-nilly!
@@ -229,6 +228,7 @@ throwError :: (Error ServerError :> es) => ServerError -> Eff es ()
 ```
 
 ```haskell
+-- Make this type signature still polymorphic
 myComputation :: Int -> Eff [Trace, Log, Cache, DB, Error ServerError] Result
 ```
 
@@ -249,10 +249,10 @@ interaction with an outside system, because this interaction is labeled at the t
 
 ---
 
-# Effect Systems 
+# Effect Systems
 
 <div class="horizontally-centered big-3">
-Their implementation 
+Their implementation
 </div>
 
 <div class="horizontally-centered big-1">
@@ -297,7 +297,7 @@ ReaderT Int IO String
 ### Monad Transformer Stacks
 
 ::: big-2
-Want to access an underlying monad? 
+Want to access an underlying monad?
 :::
 
 ---
@@ -305,7 +305,7 @@ Want to access an underlying monad?
 ### Monad Transformer Stacks
 
 ::: big-2
-Want to access an underlying monad? 
+Want to access an underlying monad?
 :::
 
 
@@ -325,7 +325,7 @@ import Control.Monad.Trans.Class
 
 action :: ReaderT Int IO String
 action = do
-  lift $ putStrLn "I access IO!" 
+  lift $ putStrLn "I access IO!"
   number <- ask
   pure $ show number
 ```
@@ -413,7 +413,8 @@ As a consequence:
 ) => m Handler
 ```
 
-Six constraints could mean six appearances of `(>>=)` between each monadic action.
+A stack with six transformers could mean six appearances of `(>>=)` between each monadic action,
+no matter if you use them all as constraints.
 
 Specialisation is thus mandatory for GHC to produce decent code!
 
@@ -506,7 +507,7 @@ Two kinds of Free Monads
 
 ### Upsold on freedom
 
-Free**er** Monads are supposed to solve problems of Free Monads, but remain exotic.
+Fre**er** Monads are supposed to solve problems of Free Monads, but remain exotic.
 
 ---
 
@@ -529,7 +530,7 @@ Main libraries:
 * `freer-simple`
   * Does not allow higher-order effects
 * `polysemy`
-  * Need a GHC plugin to attain reasonable performance
+  * Unconditionally slow and relies on a lot of aggressive optimisations
 
 ### In Conclusion
 
@@ -540,9 +541,10 @@ Main libraries:
 
 ### In Conclusion
 
-<img src="./assets/img/engineering-dead-end.png" height=auto>
+<img src="./assets/img/engineering-dead-end.png">
 
 ---
+
 
 # Now Introducing: Effectful
 
@@ -556,22 +558,26 @@ Main libraries:
 
 > Created by Andrzej Rybczak in 2021
 
-## Integrations
+## Integrations with the Haskell ecosystem
   * Drop-in solution in 🫵 your codebase
-  * Integrations with `unliftio`, `exceptions`, `resourcet`
-
-## Correctness
-  * To hell with counter-intuitive interactions!
-
-## Performance
-  * `SmallMutableArray` + `RealWorld`
-  * `PrimArray Int`
-  * Strict `IORef`
+  * Integrations with `unliftio` and `exceptions`
+  * Integration with third-party MTL and transformers
 
 :::notes
 Effectful stems from the double need of replacing stacks of a dozen transformers in industrial
-code bases. For this, it needs very good integration with libraries like `unliftio`, `exceptions`, `resourcet`, because it is made to be dropped into in an ecosystem of libraries.
+code bases. For this, it needs very good integration with libraries like `unliftio`, `exceptions`, because it is made to be dropped into in an ecosystem of libraries.
+:::
 
+---
+
+# Now Introducing: Effectful
+
+## Reliable Foundation
+  * To hell with counter-intuitive interactions!
+  * No more state loss on exceptions
+  * IO and exceptions are supported out-of-the-box
+
+::: notes
 However, it does not inherit types from the `transformers` library.
 For the sake of correctness, Effectful re-implemented the State, Writer, and Except transformers. While ReaderT does not have any surprising behaviour,
 the ways StateT and ExceptT interact together can be pretty counter-intuitive! Especially, dropping state updates is not cool, and the fact that
@@ -584,14 +590,32 @@ As such, the performance need not to be just decent but very good. It makes use 
 
 # Now Introducing: Effectful
 
-* Like `transformers`: Concrete monad: `Eff`
-  * No need for aggressive specialisation
-* Like `mtl`: Effects can be Constraints:
-  * `(MyEffect :> es) => Eff es`
-* Unlike Free Monads, handlers are called in-place, thanks to _evidence-passing_.
-  * No "program tree" is built at run-time
-* Restrictions on non-determinism
-  * The need for `MonadUnliftIO` (`fork`, `bracket`) outweighs the benefits of delimited continuations
+## Performant
+  * Low-level performance
+  * Unlike Free Monads, no "program tree" is built at run-time
+    * Handlers are called in-place, thanks to _evidence-passing_.
+  * Unlike MTL, you only pay for what you use
+
+::: notes
+Effectful makes use of efficient data structures, like `SmallMutableArray`, Strict `IORef` and `MVar` to avoid space leaks.
+:::
+
+---
+
+# Now Introducing: Effectful
+
+## Interactions with transformers / mtl
+  * `Eff` provides `MonadMask` and `MonadUnliftIO`
+  * Interfacing with existing libraries is well-supported **and** documented
+
+---
+
+# Now Introducing: Effectful
+
+## Tradeoffs
+  * No *real* Non-Determinism
+  * No Coroutines
+  * IO, `MonadUnliftIO`, capabilities are privileged compared to suspending and resuming computation
 
 ---
 
@@ -617,7 +641,8 @@ webHandler
      , Log :> es
      , Time :> es
      , Trace :> es
-     , DB :> es)
+     , DB :> es
+     , IOE :> es)
 ```
 
 ::: notes
@@ -625,6 +650,108 @@ Offering good ergonomics to replace your bare ReaderT or your MTL constraints.
 
 The Eff monad has instances for MonadThrow, MonadCatch, MonadMask, and `MonadBaseControl IO`, so you don't have to specify them manually.
 :::
+
+---
+
+# Implementing Effects
+
+---
+
+## Static Reader
+
+```haskell
+data Reader r :: Effect
+
+type instance DispatchOf (Reader r) = Static NoSideEffects
+newtype instance StaticRep (Reader r) = Reader r
+```
+
+```haskell
+runReader
+  :: r -- ^ The initial environment.
+  -> Eff (Reader r : es) a
+  -> Eff es a
+runReader action = evalStaticRep (Reader action)
+
+ask :: Reader r :> es => Eff es r
+ask = do
+  Reader r <- getStaticRep
+  pure r
+```
+
+---
+
+## Dynamic Reader
+
+```haskell
+data Reader r :: Effect where
+  Ask   :: Reader r m r
+
+type instance DispatchOf (Reader r) = Dynamic
+
+```
+
+```haskell
+ask :: (Reader r :> es) => Eff es r
+ask = send Ask
+```
+
+---
+
+## Existing Effect from transformers/mtl
+
+---
+
+### `monad-time`
+
+```haskell
+-- From `monad-time`
+class Monad m => MonadTime m where
+  currentTime :: m UTCTime
+
+instance MonadTime IO where
+  currentTime = getCurrentTime
+
+-- | Generic, overlapping instance.
+instance {-# OVERLAPPABLE #-} (
+    MonadTime m
+  , MonadTrans t
+  , Monad (t m)
+  ) => MonadTime (t m) where
+    currentTime = lift currentTime
+```
+
+---
+
+### `monad-time-effectful`
+
+```haskell
+-- Our effect
+data Time :: Effect where
+  CurrentTime :: Time m UTCTime
+
+type instance DispatchOf Time = Dynamic
+
+-- Canonical orphan instance
+instance Time :> es => MonadTime (Eff es) where
+  currentTime = send CurrentTime
+```
+
+```haskell
+-- IO interpretation
+runTime :: IOE :> es => Eff (Time : es) a -> Eff es a
+runTime = interpret $ \_ -> \case
+  CurrentTime -> liftIO getCurrentTime
+
+-- Frozen interpretation
+runFrozenTime :: IOE :> es => UTCTime -> Eff (Time : es) a -> Eff es a
+runFrozenTime time = interpret $ \_ -> \case
+  CurrentTime -> pure time
+```
+
+---
+
+# Failure mode
 
 ---
 
@@ -669,9 +796,16 @@ Test suite: FAIL
 ```
 
 ::: notes
-It happens that I use the `unlift` function to implement a JSON file backend for the logging library I use,
-and so I am directed to entities that I can look up on Hoogle!
+I am directed to entities that I can look up on Hoogle!
 :::
+
+---
+
+# Conclusion
+
+* To know about the interactions of your program with the outside world, pick an effect system
+* For application development, integration is primordial 
+* If you want an upgrade from the `ReaderT IO` pattern, `Effectful` is for you
 
 ---
 
@@ -690,3 +824,4 @@ and so I am directed to entities that I can look up on Hoogle!
 * _"Lifts for free: making mtl typeclasses derivable"_, 2017, <https://lexi-lambda.github.io/blog/2017/04/28/lifts-for-free-making-mtl-typeclasses-derivable>
 * _"Free monads considered harmful"_, 2017, <https://markkarpov.com/post/free-monad-considered-harmful.html>
 * _"Free Monads for Less (Part 1 of 3): Codensity"_, 2011, <https://ekmett.github.io/reader/2011/free-monads-for-less/index.html>
+* _Effects for Less_, ZuriHac 2020, <https://www.youtube.com/watch?v=0jI-AlWEwYI>
