@@ -110,7 +110,8 @@ Now, does that mean that IO is complete bullshit? No! We needed an analytical fr
 ### When you're a pure lambda calculus girl living in a pure lambda calculus world, life in plastic _is_ indeed fantastic!
 
 :::notes
-You can do a lot with the generated code, like re-organise it, inline it, anticipate what it will do and replace function calls.
+You can do a lot with the generated code, like re-organise it, inline it,
+anticipate what it will do and replace function calls.
 Inlining becomes easier as well, when you know for a fact that.
 :::
 
@@ -229,7 +230,10 @@ throwError :: (Error ServerError :> es) => ServerError -> Eff es ()
 
 ```haskell
 -- Make this type signature still polymorphic
-myComputation :: Int -> Eff [Trace, Log, Cache, DB, Error ServerError] Result
+myComputation
+  :: (Trace :> es, Log :> es, Cache :> es, DB :> es, Error ServerError :> es)
+  => Int
+  -> Eff es Result
 ```
 
 <div class="horizontally-centered big-3">
@@ -515,7 +519,7 @@ Fre**er** Monads are supposed to solve problems of Free Monads, but remain exoti
 
 ### Upsold on freedom
 
-Free**er** Monads are supposed to solve problems of Free Monads, but remain exotic.
+Fre**er** Monads are supposed to solve problems of Free Monads, but remain exotic.
 
 ### You actually run two programs
 
@@ -583,7 +587,8 @@ For the sake of correctness, Effectful re-implemented the State, Writer, and Exc
 the ways StateT and ExceptT interact together can be pretty counter-intuitive! Especially, dropping state updates is not cool, and the fact that
 ExceptT does not raise a runtime exception means that resources are not freed. It's very easy to inadvertently trigger a space leak.
 
-As such, the performance need not to be just decent but very good. It makes use of IORefs, and low-level Haskell constructs like mutable arrays.
+That's why many people decide to stay on `ReaderT IO`.
+
 :::
 
 ---
@@ -598,6 +603,8 @@ As such, the performance need not to be just decent but very good. It makes use 
 
 ::: notes
 Effectful makes use of efficient data structures, like `SmallMutableArray`, Strict `IORef` and `MVar` to avoid space leaks.
+
+As such, the performance need not to be just decent but very good. It makes use of IORefs, and low-level Haskell constructs like mutable arrays.
 :::
 
 ---
@@ -804,7 +811,7 @@ I am directed to entities that I can look up on Hoogle!
 # Conclusion
 
 * To know about the interactions of your program with the outside world, pick an effect system
-* For application development, integration is primordial 
+* For application development, integration is primordial
 * If you want an upgrade from the `ReaderT IO` pattern, `Effectful` is for you
 
 ---
