@@ -2,20 +2,13 @@ all: slides
 
 slides:
 	pandoc -t dzslides \
-	      --template template.html \
-	      --highlight-style kate \
-	       -s slides.md \
-	       -o slides.html
-
-standalone:
-	pandoc -t dzslides \
 				--embed-resources \
 				--standalone \
 	      --template template.html \
 	      --highlight-style kate \
 	      --metadata embed-css \
 	       -s slides.md \
-	       -o slides-standalone.html
+	       -o slides.html
 
 with-notes:
 	pandoc -t dzslides \
@@ -26,10 +19,9 @@ with-notes:
 	      --metadata display-notes \
 	      --metadata embed-css \
 	       -s slides.md \
-	       -o slides-standalone.html
+	       -o slides.html
 
 clean:
 	-rm slides.html
-	-rm slides-standalone.html
 
 .PHONY: all $(MAKECMDGOALS)
