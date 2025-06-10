@@ -9,13 +9,13 @@ introductory_notes: |
   this talk about practical programming with effects in Haskell
 light: true
 #ratio43: true
-overlay: MuniHac 2024
+overlay: Lambda Days 2025
 author:
   - name: Hécate
     desc:
-      - Software Engineer / PM at Scrive </br> <span class="big-2">&</span>
-      - Helping hand at the Haskell Foundation </br> <span class="big-2">&</span>
-      - Trade Unionism at Solidaires Informatique
+      - <span class="big-2">Software Engineer / PM at Scrive</span> </br> &
+      - <span class="big-2">Helping hand at the Haskell Foundation </span> </br> &
+      - <span class="big-2">Trade Unionism at Solidaires Informatique </span>
 
 ---
 
